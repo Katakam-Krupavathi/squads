@@ -4,6 +4,20 @@
 
 Built for **WeMakeDevs × AWS — Bharat Builds Tour — Stop 1: First Commit (17–20 September 2026)**.
 
+[![Deployed on AWS Amplify](https://img.shields.io/badge/Deployed%20on-AWS%20Amplify-FF9900?style=for-the-badge&logo=awsamplify&logoColor=white)](https://github.com/Katakam-Krupavathi/squads)
+[![AWS Hackathon](https://img.shields.io/badge/AWS%20Bharat%20Builds-First%20Commit-232F3E?style=for-the-badge&logo=amazonwebservices&logoColor=white)](https://github.com/Katakam-Krupavathi/squads)
+
+---
+
+## 🌐 Live Demo & Deployment
+
+- **GitHub Repository**: [`https://github.com/Katakam-Krupavathi/squads`](https://github.com/Katakam-Krupavathi/squads)
+- **Production Host**: **AWS Amplify Hosting** (Monorepo root: `frontend/`)
+- **Demo Mode**: 100% Deterministic Mock Mode (`VITE_USE_MOCK_API=true`) for zero-risk, high-reliability hackathon judging and live evaluation.
+- **Continuous Deployment**: Automated via `amplify.yml` monorepo configuration tracking branch `main`.
+
+> *Note: The public demo runs using deterministic mock analyses for demo reliability and offline evaluation. Live AWS services (Fargate/Bedrock) are detailed in the architecture section.*
+
 ---
 
 ## 🎯 The Core Problem
