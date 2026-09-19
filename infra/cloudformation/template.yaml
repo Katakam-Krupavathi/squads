@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'FirstPR — AWS Production Serverless Infrastructure for Hackathon First Commit'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+  GitHubRepoUrl:
+    Type: String
+    Default: 'https://github.com/FirstPR/firstpr'
+
+Resources:
+  # 1. Amazon DynamoDB Tables
+  ReportsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FirstPR-Reports
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expires_at
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: FirstPR
+
+  # 2. Amazon S3 Artifacts Bucket
+  ArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'firstpr-artifacts-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldExecutionLogs
+            Status: Enabled
+            ExpirationInDays: 7
+
+  # 3. CloudWatch Log Group
+  SandboxLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /firstpr/sandbox-runs
+      RetentionInDays: 14
+
+  # 4. Amazon ECS Cluster for Fargate Sandbox Runner
+  SandboxECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: FirstPR-Sandbox-Cluster
+
+  # 5. ECS Fargate Execution Role (Restricted to pulling image & logging; NO task role to access AWS APIs)
+  ECSExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: FirstPR-ECSExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  # 6. AWS Lambda Execution Role
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: FirstPR-LambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FirstPRLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                Resource: !GetAtt ReportsTable.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutItem
+                Resource: !Sub '${ArtifactsBucket.Arn}/*'
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+
+  # 7. AWS Amplify App (Frontend React SPA)
+  AmplifyApp:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: FirstPR-Frontend
+      Repository: !Ref GitHubRepoUrl
+      BuildSpec: |
+        version: 1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - cd frontend
+                - npm ci
+            build:
+              commands:
+                - npm run build
+          artifacts:
+            baseDirectory: frontend/dist
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - frontend/node_modules/**/*
+
+Outputs:
+  DynamoDBTableName:
+    Value: !Ref ReportsTable
+  S3BucketName:
+    Value: !Ref ArtifactsBucket
+  ECSClusterName:
+    Value: !Ref SandboxECSCluster
