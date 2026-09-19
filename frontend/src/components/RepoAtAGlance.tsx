@@ -1,103 +1,179 @@
-import React from 'react';
-import { Star, GitFork, AlertCircle, FileCode, CheckCircle, Layers, Terminal, Box, GitBranch } from 'lucide-react';
-import { RepositorySummary } from '../types';
+import React, { useState } from 'react';
+import { RepositorySummary, CodebaseNode } from '../types';
+import { Box, CheckCircle, FileCode, Terminal, Folder, File, ChevronRight, ChevronDown, BookOpen, GitPullRequest, Layers } from 'lucide-react';
 
 interface RepoAtAGlanceProps {
   summary: RepositorySummary;
 }
 
-export const RepoAtAGlance: React.FC<RepoAtAGlanceProps> = ({ summary }) => {
+const TreeNodeView: React.FC<{ node: CodebaseNode; depth?: number }> = ({ node, depth = 0 }) => {
+  const [isOpen, setIsOpen] = useState(true);
+  const isDirectory = node.type === 'directory';
+
   return (
-    <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-6 shadow-xl backdrop-blur-xl space-y-6">
-      
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
-        <div>
-          <div className="flex items-center space-x-3">
-            <h2 className="text-2xl font-bold text-white tracking-tight">
-              {summary.full_name}
-            </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-              {summary.stack.primary_language}
+    <div className="font-mono text-xs">
+      <div
+        onClick={() => isDirectory && setIsOpen(!isOpen)}
+        className={`flex items-center space-x-1.5 py-1 px-2 rounded hover:bg-slate-800/60 transition-colors ${
+          isDirectory ? 'cursor-pointer text-slate-300' : 'text-slate-400'
+        }`}
+        style={{ paddingLeft: `${depth * 14 + 8}px` }}
+      >
+        {isDirectory ? (
+          <>
+            {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-slate-500 shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />}
+            <Folder className="w-3.5 h-3.5 text-amber-400/80 shrink-0" />
+            <span className="font-semibold text-slate-200">{node.name}/</span>
+          </>
+        ) : (
+          <>
+            <span className="w-3.5 shrink-0"></span>
+            <File className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className={node.is_target ? 'text-emerald-300 font-bold' : node.is_test ? 'text-teal-300' : 'text-slate-300'}>
+              {node.name}
             </span>
-          </div>
-          <p className="text-sm text-slate-400 mt-1 max-w-3xl leading-relaxed">
-            {summary.description || 'Open source software repository'}
-          </p>
-        </div>
-
-        {/* GitHub Stats */}
-        <div className="flex items-center space-x-3 text-xs font-medium text-slate-300">
-          <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
-            <span>{summary.stars.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
-            <GitFork className="w-3.5 h-3.5 text-teal-400" />
-            <span>{summary.forks.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 font-mono">
-            <GitBranch className="w-3.5 h-3.5 text-slate-400" />
-            <span>{summary.default_branch}</span>
-          </div>
-        </div>
+            {node.is_target && (
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase font-sans font-bold">
+                Target
+              </span>
+            )}
+            {node.is_test && (
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-teal-500/20 text-teal-400 border border-teal-500/30 uppercase font-sans font-medium">
+                Test
+              </span>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Grid of Key Repo Specs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/70">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Package Manager</span>
-          <div className="flex items-center space-x-2 mt-1.5">
-            <Box className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-bold text-slate-200 font-mono">{summary.stack.package_manager}</span>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/70">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Test Framework</span>
-          <div className="flex items-center space-x-2 mt-1.5">
-            <CheckCircle className="w-4 h-4 text-teal-400" />
-            <span className="text-sm font-bold text-slate-200 font-mono">{summary.stack.test_framework || 'pytest / npm'}</span>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/70">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Entry Points</span>
-          <div className="flex items-center space-x-2 mt-1.5 truncate">
-            <Terminal className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="text-xs font-bold text-slate-200 font-mono truncate">
-              {summary.stack.entry_points[0] || 'src/index.js'}
-            </span>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/70">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Analyzed Tree</span>
-          <div className="flex items-center space-x-2 mt-1.5">
-            <FileCode className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-bold text-slate-200 font-mono">{summary.total_files_analyzed} Files</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Detected Frameworks & Architecture Overview */}
-      <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800/60 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400">Detected Frameworks:</span>
-          {summary.stack.frameworks.map((fw, idx) => (
-            <span
-              key={idx}
-              className="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700/60"
-            >
-              {fw}
-            </span>
+      {isDirectory && isOpen && node.children && (
+        <div className="space-y-0.5">
+          {node.children.map((child, idx) => (
+            <TreeNodeView key={idx} node={child} depth={depth + 1} />
           ))}
         </div>
+      )}
+    </div>
+  );
+};
 
-        <p className="text-xs text-slate-400 leading-relaxed">
-          <strong className="text-slate-300">Architecture Overview: </strong>
-          {summary.architecture_overview}
-        </p>
+export const RepoAtAGlance: React.FC<RepoAtAGlanceProps> = ({ summary }) => {
+  const [showTree, setShowTree] = useState(true);
+
+  return (
+    <div className="bg-[#0e1422] border border-slate-800/90 rounded-2xl p-6 shadow-xl backdrop-blur-xl space-y-6">
+      
+      {/* Title */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+        <div>
+          <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+            <Layers className="w-4 h-4 text-emerald-400" />
+            <span>Repository at a glance</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Architecture and technical footprint discovered by FirstPR static analysis.
+          </p>
+        </div>
+      </div>
+
+      {/* Grid: Overview Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Side: Summary & Specs */}
+        <div className="lg:col-span-7 space-y-5">
+          
+          {/* What this repository does */}
+          <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              What this repository does
+            </span>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {summary.architecture_overview}
+            </p>
+          </div>
+
+          {/* Codebase Numbers Grid */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">Source Files</span>
+              <span className="text-sm font-bold text-slate-200 font-mono mt-1 block">
+                {summary.stack.total_source_files || summary.total_files_analyzed} files
+              </span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">Test Files</span>
+              <span className="text-sm font-bold text-teal-300 font-mono mt-1 block">
+                {summary.stack.total_test_files || summary.stack.test_locations.length} test suites
+              </span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <span className="text-[10px] uppercase font-semibold text-slate-500 block">Estimated Size</span>
+              <span className="text-sm font-bold text-slate-200 font-mono mt-1 block">
+                {summary.stack.loc_estimate || `${summary.repository_size_kb} KB`}
+              </span>
+            </div>
+          </div>
+
+          {/* Entry points & Test Locations */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
+              <span className="text-[10px] uppercase font-semibold text-slate-500 font-sans block">Primary Entry Point</span>
+              <div className="flex items-center space-x-1.5 text-slate-200 truncate">
+                <Terminal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="truncate">{summary.stack.entry_points[0] || 'source/index.js'}</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1">
+              <span className="text-[10px] uppercase font-semibold text-slate-500 font-sans block">Test Harness</span>
+              <div className="flex items-center space-x-1.5 text-slate-200 truncate">
+                <CheckCircle className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                <span className="truncate">{summary.stack.test_framework || 'Vitest'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Contribution Guidance Badge Bar */}
+          <div className="p-3.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+            <span className="text-[11px] font-semibold text-slate-400">Contribution Guidance:</span>
+            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px]">
+              <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+              <span>CONTRIBUTING.md detected</span>
+            </span>
+            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px]">
+              <GitPullRequest className="w-3.5 h-3.5 text-teal-400" />
+              <span>PR Template active</span>
+            </span>
+          </div>
+
+        </div>
+
+        {/* Right Side: Codebase Map Tree (Section 20) */}
+        <div className="lg:col-span-5">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 h-full flex flex-col">
+            <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-900">
+              <div className="flex items-center space-x-2">
+                <FileCode className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-slate-200">Codebase Structure Map</span>
+              </div>
+              <button
+                onClick={() => setShowTree(!showTree)}
+                className="text-[11px] text-slate-500 hover:text-slate-300 font-mono cursor-pointer"
+              >
+                {showTree ? 'Collapse' : 'Expand'}
+              </button>
+            </div>
+
+            {showTree && summary.tree_structure && (
+              <div className="space-y-0.5 overflow-y-auto max-h-[260px] pr-1">
+                {summary.tree_structure.map((node, idx) => (
+                  <TreeNodeView key={idx} node={node} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
     </div>

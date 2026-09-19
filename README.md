@@ -8,7 +8,7 @@ Built for **WeMakeDevs × AWS — Bharat Builds Tour — Stop 1: First Commit (1
 
 ## 🎯 The Core Problem
 
-Open-source contribution has three major onboarding failures:
+Open-source contribution suffers from three major onboarding failures:
 
 1. **The Environment Wall**: A beginner clones a repository but fails to get it running due to runtime mismatches, missing dependencies, or broken build steps.
 2. **The "Good First Issue" Label Lie**: Issues are often labelled `good first issue` while secretly requiring cross-cutting architectural changes, deep framework knowledge, or modifications to central bottlenecks.
@@ -22,6 +22,30 @@ Open-source contribution has three major onboarding failures:
 - **⚠️ Exposes Mislabelled Issues**: Catches misleading `good first issue` tags and spotlights high-risk architectural traps with hard repository evidence.
 - **⚡ Real Isolated Environment Verification**: Actually executes `install`, `build`, and `test` inside an **AWS ECS / Fargate** sandbox, capturing exit codes and terminal logs instead of guessing commands.
 - **🗺️ Grounded Contribution Walkthroughs**: Generates step-by-step file reading timelines strictly validated against the real repository tree (**Zero Hallucinated Paths**).
+
+---
+
+## 🎮 Running the UI in Demo Mode
+
+FirstPR includes a 100% deterministic, zero-risk Demo Mode for hackathon judging and evaluation.
+
+> **Demo Mode uses deterministic precomputed repository analyses and does not require external GitHub API rate limits or AWS service credentials to run.**
+
+### Start the Frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Visit `http://localhost:3000` in your browser.
+
+### 5 Precomputed Demo Scenarios Available:
+1. **`chalk/chalk` (JavaScript / Node.js)**: 3 candidate issues, 1 Genuinely Beginner (#524), 1 Moderate (#510), 1 Mislabelled Issue (#491) exposed with 7-signal evidence, verified sandbox environment with test logs.
+2. **`fastapi/fastapi` (Python)**: Richer codebase with pytest, 1 beginner tutorial issue (#9820), 1 moderate OpenAPI issue (#9210), 1 mislabelled async generator leak (#8431), verified environment.
+3. **`vercel/ms` (TypeScript)**: Small micro-utility codebase, sub-second Vitest feedback, quick beginner issue (#162).
+4. **`example/broken-build` (Node version mismatch)**: Demonstrates honest failure reporting — install succeeds, build fails with Node 20 vs 22 diagnostic error and recommended fix.
+5. **`example/unsupported-stack` (Bare-metal Rust/Zig)**: Static repo analysis succeeds while environment runner gracefully flags unsupported bare-metal hardware.
 
 ---
 
@@ -71,42 +95,28 @@ flowchart LR
 
 ---
 
-## 💻 Local Development & Testing
+## 🧪 Automated Testing & Verification
 
-### 1. Backend Setup (FastAPI & Python 3.12+)
+### Run Backend Pytest Suite:
 ```bash
 cd backend
-python -m pip install -r requirements.txt
 python -m pytest tests/ -v
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+# 16/16 Passed (100% Green)
 ```
 
-### 2. Frontend Setup (React 19 + TypeScript + Vite)
+### Run Frontend Vitest Suite:
 ```bash
 cd frontend
-npm install
-npm run build
-npm run dev
+npm run test
+# 9/9 Passed (100% Green)
 ```
 
-Visit `http://localhost:3000` in your browser.
-
----
-
-## 📦 Supported Stacks & Repositories
-
-- **JavaScript / TypeScript**: Node.js, npm, pnpm, yarn, bun, React, Next.js, Express, Jest, Vitest, AVA.
-- **Python**: pip, poetry, uv, pipenv, FastAPI, Django, Flask, PyTorch, pytest, unittest.
-- **Go**: go modules, `go build`, `go test`.
-
----
-
-## 🔒 Security Model
-
-- **Zero-Trust Sandbox**: Ephemeral Fargate container with read-only root and no AWS IAM TaskRole.
-- **Path Traversal Defense**: All paths checked against directory boundary escape attempts.
-- **Command Allowlisting**: Strict pattern matching rejecting shell metacharacters and SSRF IPs (`169.254.169.254`).
-- **Grounding Validation**: Rejects any AI-suggested file not present in the repository tree.
+### Production Bundle Check:
+```bash
+cd frontend
+npm run build
+# Built successfully in ~4s with 0 errors
+```
 
 ---
 

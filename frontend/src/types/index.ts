@@ -1,4 +1,4 @@
-export type DifficultyCategory = 'Genuinely Beginner' | 'Moderate' | 'Mislabelled';
+export type DifficultyLevel = 'Genuinely Beginner' | 'Moderate' | 'Mislabelled';
 export type VerificationStatus = 'Verified' | 'Partially Verified' | 'Verification Failed' | 'Timed Out' | 'Unsupported Stack';
 export type StepStatus = 'pending' | 'running' | 'completed' | 'warning' | 'failed' | 'skipped';
 export type JobStatus = 'QUEUED' | 'INGESTING' | 'MAPPING' | 'SCORING' | 'VERIFYING' | 'FINALIZING' | 'COMPLETE' | 'PARTIAL' | 'FAILED';
@@ -8,17 +8,19 @@ export interface DifficultySignal {
   score: number;
   weight: number;
   weighted_score: number;
+  rating_label: 'Low' | 'Moderate' | 'High' | 'Strong' | 'Weak' | 'Excellent' | 'Minimal' | 'Available' | 'Claimed';
   evidence: string[];
   explanation: string;
 }
 
 export interface IssueDifficultyScore {
   total_score: number;
-  category: DifficultyCategory;
+  category: DifficultyLevel;
   signals: Record<string, DifficultySignal>;
   confidence: number;
   summary_explanation: string;
   is_mislabelled: boolean;
+  mislabelled_reasons?: string[];
 }
 
 export interface IssueCandidate {
@@ -27,7 +29,7 @@ export interface IssueCandidate {
   body?: string;
   html_url: string;
   labels: string[];
-  state: string;
+  state: 'open' | 'closed';
   author?: string;
   created_at?: string;
   updated_at?: string;
@@ -70,7 +72,17 @@ export interface EnvironmentVerification {
   timeout_seconds: number;
   failure_stage?: string;
   error_summary?: string;
+  recommended_fix?: string;
   is_sandboxed: boolean;
+}
+
+export interface CodebaseNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: CodebaseNode[];
+  is_target?: boolean;
+  is_test?: boolean;
 }
 
 export interface RepositoryStack {
@@ -84,6 +96,9 @@ export interface RepositoryStack {
   entry_points: string[];
   config_files: string[];
   ci_workflows: string[];
+  loc_estimate?: string;
+  total_source_files?: number;
+  total_test_files?: number;
 }
 
 export interface RepositorySummary {
@@ -102,15 +117,25 @@ export interface RepositorySummary {
   contributing_snippet?: string;
   architecture_overview: string;
   total_files_analyzed: number;
+  tree_structure?: CodebaseNode[];
 }
 
 export interface FileReadingStep {
   order: number;
   path: string;
+  phase_label: 'Start here' | 'Understand this next' | 'Then inspect the tests' | 'Reference';
   purpose: string;
+  why_it_matters: string;
   is_target_file: boolean;
   key_symbols: string[];
   exists_in_repo: boolean;
+}
+
+export interface ContributionPlanStep {
+  step_number: number;
+  title: string;
+  detail: string;
+  command?: string;
 }
 
 export interface GroundedWalkthrough {
@@ -118,19 +143,37 @@ export interface GroundedWalkthrough {
   issue_title: string;
   simple_explanation: string;
   difficulty_justification: string;
+  estimated_scope: {
+    files_count: number;
+    test_count: number;
+    scope_description: string;
+  };
   files_to_read: FileReadingStep[];
-  likely_change_location: string;
-  likely_functions_or_classes: string[];
+  likely_change_location: {
+    file: string;
+    symbol: string;
+    confidence: 'High confidence' | 'Moderate confidence' | 'Heuristic match';
+    reason: string;
+  };
+  contribution_plan: ContributionPlanStep[];
   relevant_tests: string[];
+  test_commands: {
+    focused_command: string;
+    full_suite_command: string;
+  };
   test_validation_guidance: string;
+  before_opening_pr_checklist: {
+    label: string;
+    source: 'README' | 'CONTRIBUTING.md' | 'PR template' | 'CI workflow';
+  }[];
   repository_conventions: {
     branch_naming?: string;
     commit_style?: string;
-    pr_checklist?: string[];
     lint_tool?: string;
     formatting_tool?: string;
     contributing_guide_path?: string;
   };
+  why_firstpr_chose_this: string[];
   grounding_validated: boolean;
   validated_file_count: number;
   model_provider: string;
@@ -142,17 +185,26 @@ export interface RepositoryAnalysis {
   analyzed_at: string;
   is_cached: boolean;
   cached_timestamp?: string;
+  scenario_tag?: string;
   summary: RepositorySummary;
   environment: EnvironmentVerification;
   ranked_issues: IssueCandidate[];
   analysis_duration_ms: number;
   cost_estimate_usd: number;
+  metrics_summary: {
+    issues_analyzed_count: number;
+    good_candidates_count: number;
+    mislabelled_count: number;
+    setup_confidence_score: number;
+  };
 }
 
 export interface PipelineStage {
+  id: string;
   name: string;
+  detail?: string;
   status: StepStatus;
-  message?: string;
+  duration_label?: string;
   timestamp?: string;
 }
 
@@ -167,4 +219,15 @@ export interface AnalysisJob {
   error?: string;
   created_at: string;
   updated_at: string;
+  metrics_sidebar?: {
+    files_inspected: number;
+    issues_evaluated: number;
+    tests_detected: number;
+    likely_setup: string[];
+    analysis_mode: string;
+  };
 }
+
+export type AppView = 'home' | 'analysis' | 'report' | 'walkthrough';
+export type IssueFilter = 'all' | 'beginner' | 'moderate' | 'mislabelled' | 'available';
+export type IssueSort = 'best_match' | 'lowest_difficulty' | 'newest';
